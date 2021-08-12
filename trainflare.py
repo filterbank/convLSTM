@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_dir', type=str, default='/Users/xulong/Downloads/ARDS/', help='dir of the dataset')
 
 parser.add_argument('--data_type', type=str, default='flare', help='KP|AP|F10.7|Oil')
-parser.add_argument('--time_step', type=int, default= 10, help=' it indicates day')
+parser.add_argument('--time_step', type=int, default= 24, help=' it indicates day')
 parser.add_argument('--pred_len', type=int, default= 1, help=' it indicates predicted day')
 
 parser.add_argument('--img_height', type=int, default= 256, help='the height of input image')
@@ -107,7 +107,7 @@ with open(test_mse_path, 'w') as testcsvmes: # open trainfile
                 input = torch.FloatTensor(input)
                 label = torch.FloatTensor(label)
 
-            label = label.squeeze()
+            #label = label.squeeze()
             # foreward
             pred = model(input)
             loss = criterion(pred, label)

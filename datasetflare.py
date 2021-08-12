@@ -4,6 +4,7 @@ import numpy as np
 from torch.utils.data import Dataset
 from PIL import Image
 import torchvision.transforms as transforms
+import random
 
 class FlareDataset (Dataset):
     def __init__(self, root, timestep, num_channels = 1, height = 256, width = 256, datatype='flare', transforms_=None):
@@ -11,7 +12,8 @@ class FlareDataset (Dataset):
         self.numfiles = []
         self.files    = []
         self.labels   = []
-
+        subdirs = []
+        # read all dictionaries
         for label in [1,0]:
             if label == 1:
                 path_name = 'POS'
@@ -19,25 +21,50 @@ class FlareDataset (Dataset):
                 path_name = 'NEG'
             root_sub = os.path.join(root, path_name)
             list = os.listdir(root_sub)
-            num = 0
-            self.numfiles.append(num)
+
             for i in range(0, len(list)):
                 subdir = os.path.join(root_sub, list[i])
-                if os.path.isdir(subdir):
-                    files = os.listdir(subdir)
-                    #num = 0
-                    for f in files:
-                        file = os.path.join(root_sub,subdir,f)
-                        if os.path.splitext(file)[1] == '.jpg':
-                            num = num + 1
-                            #self.files.append(oneday)
-                            print(file)
-                            self.files.append(file)
-                            self.labels.append(label)
-                    self.numfiles.append(num)
+                subdirs.append(subdir)
+        # rearrange all dictionary
+        for i in range(len(subdirs)):
+            j = int(random.random() * (i + 1))
+            if j <= len(subdirs) - 1:  # 交换
+                subdirs[i], subdirs[j] = subdirs[j], subdirs[i]
+                #y[i], y[j] = y[j], y[i]
+        '''
+        for label in [1,0]:
+            if label == 1:
+                path_name = 'POS'
+            else:
+                path_name = 'NEG'
+            #root_sub = os.path.join(root, path_name)
+        '''
+        #list = subdirs
+        num = 0
+        self.numfiles.append(num)
+        for subdir in subdirs:
+            #subdir = list[i] #subdir = os.path.join(root_sub, list[i])
+            if 'POS' in subdir:
+                label = 1
+            elif 'NEG' in subdir:
+                label = 0
+            else:
+                print('error')
+            if os.path.isdir(subdir):
+                files = os.listdir(subdir)
+                assert len(files) > 0
+                for f in files:
+                    file = os.path.join(subdir,f)
+                    if os.path.splitext(file)[-1] == '.jpg' or os.path.splitext(f)[1] == '.png':
+                        num = num + 1
+                        #self.files.append(oneday)
+                        print(file)
+                        self.files.append(file)
+                        self.labels.append(label)
+                self.numfiles.append(num)
 
         #self.files = sorted(glob.glob(root + '/*.*'))
-        self.list = list
+        #self.list = list
         self.timestep = timestep
         self.num_chl  = num_channels
         self.img_size = (height, width)
@@ -46,7 +73,7 @@ class FlareDataset (Dataset):
         self.datatype = datatype # KP, AP, F10.7
 
     def __len__(self):
-        return len(self.list)
+        return len(self.numfiles) - 1
 
 
     def __getitem__(self, index):
@@ -68,9 +95,22 @@ class FlareDataset (Dataset):
                 labelData.append(label)
             else:
                 print('The DataType is wrong !')
+        if len(groupData) < groupfilenum * 1:
+            len_data = len(groupData)
+            oneData = groupData[-1:][0]
+            label   = labelData[-1:][0]
+            for i in range(0,groupfilenum-len_data):
+                groupData.append(oneData)
+                labelData.append(label)
 
-        if  self.datatype == 'flare' and len(groupData) > groupfilenum * 1:
-            labeldata = np.array(labelData[:self.timestep]).astype('float32') #np.array(groupData).astype('float32')
+        for i in range(0, len(labelData)):
+            try:
+                assert labelData[i] == labelData[-1]
+            except AssertionError:
+                print('Assertion Error')
+
+        if  self.datatype == 'flare' and len(groupData) >= groupfilenum * 1:
+            labeldata = np.array(labelData[-1:]).astype('float32') #np.array(groupData).astype('float32')
             inputdata = np.array(groupData[:self.timestep]).astype('float32') #must the same for seq_len
         else:
             print(index)

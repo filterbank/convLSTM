@@ -181,7 +181,8 @@ class ConvLSTM(nn.Module):
             last_state_list = last_state_list[-1:]
         return layer_output_list, last_state_list
         '''
-        output = linear(output_lstm)
+
+        output = nn.functional.softmax(linear(output_lstm), dim = 0)
         return output
 
     def _init_hidden(self, batch_size, image_size):
